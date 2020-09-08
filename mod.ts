@@ -1,31 +1,20 @@
-import { path, cachingTransform } from './deps.ts'
-import { DENO_NYC_CACHE } from './lib/constants.ts'
+import { path } from './deps.ts'
 import { getCpuCount } from './lib/getCpuCount.ts'
 import { pMap } from './lib/pMap.ts'
 import { glob } from './lib/glob.ts'
+import { getCacheDir } from './lib/helpers.ts'
 import { TestExclude } from './lib/TestExclude.ts'
 import { Hash } from './lib/Hash.ts'
 import { SourceMaps } from './lib/SourceMaps.ts'
 import { InstrumenterIstanbul, Instrumenter, SourceMapOpts } from './lib/InstrumenterIstanbul.ts'
+import { cachingTransform } from './lib/cachingTransform.ts'
 
 type TransformFunction = (code: string, { filename }: { filename: string }) => string
-
-function getCacheDir (cacheDir?: string) {
-  if (typeof cacheDir === 'string') {
-    const resolved = path.resolve(cacheDir)
-
-    if (resolved.trim() !== '') {
-      return resolved
-    }
-  }
-
-  return DENO_NYC_CACHE
-}
 
 export class NYC {
   constructor (config: any) {
     this.config = { ...config }
-    this.cwd = typeof config.cwd === 'string' ? config.cwd : Deno.cwd()
+    this.cwd = typeof config.cwd === 'string' ? path.resolve(config.cwd) : Deno.cwd()
     this.cacheDirectory = getCacheDir(config.cacheDir)
     this.cache = Boolean(this.cacheDirectory && config.cache)
     this._eagerInstantiation = config.eager as boolean || false
@@ -57,7 +46,7 @@ export class NYC {
 
     this.hashCache = {}
     this.fakeRequire = false // null
-    this._instrumenter = null as unknown as Instrumenter
+    this._instrumenter = undefined as unknown as Instrumenter
   }
 
   config: any
@@ -193,9 +182,14 @@ export class NYC {
         // debugLog('failed to instrument ' + filename + ' with error: ' + e.stack)
         if (this.config.exitOnError) {
           console.error('Failed to instrument ' + filename)
+          console.error(e)
           if (typeof window.onunload === 'function') window.onunload({} as any)
           Deno.exit(1)
         } else {
+          if (this.config.verboseError) {
+            console.error('Failed to instrument ' + filename)
+            console.error(e)
+          }
           instrumented = code
         }
       }
@@ -215,7 +209,9 @@ export class NYC {
       compact: this.config.compact,
       preserveComments: this.config.preserveComments,
       esModules: this.config.esModules,
-      parserPlugins: this.config.parserPlugins
+      parserPlugins: Array.isArray(this.config.parserPlugins)
+        ? this.config.parserPlugins.concat('typescript')
+        : ['typescript']
     })
   }
 

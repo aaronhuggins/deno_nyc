@@ -11,7 +11,7 @@ interface InstrumenterOpts {
   preserveComments: boolean,
   produceSourceMap: boolean,
   ignoreClassMethods: any[],
-  esModules: any[],
+  esModules: string,
   parserPlugins: any[]
 }
 
@@ -21,7 +21,7 @@ export interface Instrumenter {
 }
 
 export function InstrumenterIstanbul (options: InstrumenterOpts): Instrumenter {
-  const instrumenter = createInstrumenter({
+  const opts: any = {
     autoWrap: true,
     coverageVariable: '__coverage__',
     embedSource: true,
@@ -31,7 +31,8 @@ export function InstrumenterIstanbul (options: InstrumenterOpts): Instrumenter {
     ignoreClassMethods: options.ignoreClassMethods,
     esModules: options.esModules,
     parserPlugins: options.parserPlugins
-  })
+  }
+  const instrumenter = createInstrumenter(opts)
 
   return {
     instrumentSync (code: string, filename: string, { sourceMap, registerMap }: SourceMapOpts): string {

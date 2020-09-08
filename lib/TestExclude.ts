@@ -6,7 +6,7 @@ const { defaults } = schema
 
 function isOutsideDir (dir: string, filename: string): boolean {
   if (Deno.build.os === 'windows') {
-    return !minimatch(path.resolve(dir, filename), path.join(dir, '**'), { dot: true })
+    return !minimatch(path.resolve(dir, filename).replaceAll(/\\/gu, '/'), path.join(dir, '**').replaceAll(/\\/gu, '/'), { dot: true })
   }
 
   return /^\.\./.test(path.relative(dir, filename))
@@ -159,8 +159,6 @@ export class TestExclude {
     }
     const list = await glob(globPatterns, globOptions)
 
-    return list.filter((file) =>
-      this.shouldInstrument(path.resolve(cwd, file))
-    )
+    return list.filter((file) => this.shouldInstrument(path.resolve(cwd, file)))
   }
 }
