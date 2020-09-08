@@ -40,13 +40,25 @@ async function windowsCpuCount () {
 export async function getCpuCount () {
   const { os } = Deno.build
 
-  switch (os) {
-    case 'darwin':
-      return await darwinCpuCount()
-    case 'windows':
-      return await windowsCpuCount()
-    case 'linux':
-    default:
-      return await linuxCpuCount()
+  try {
+    switch (os) {
+      case 'darwin':
+        return await darwinCpuCount()
+      case 'windows':
+        return await windowsCpuCount()
+      case 'linux':
+      default:
+        return await linuxCpuCount()
+    }
+  } catch (error) {
+    // Allow user to run even without required env permission.
+    if (
+      typeof error.constructor === 'function' &&
+      error.constructor.name === 'PermissionDenied'
+    ) {
+      return 1
+    }
+
+    throw error
   }
 }

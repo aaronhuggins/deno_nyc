@@ -23,13 +23,16 @@ export class NYC {
 
     this.extensions = new Array<string>().concat(Array.isArray(config.extension) ? config.extension : [])
       .concat('.js')
+      .concat('.ts')
       .map(ext => ext.toLowerCase())
       .filter((item, pos, arr) => arr.indexOf(item) === pos)
 
     this.exclude = new TestExclude({
       cwd: this.cwd,
       include: config.include,
-      exclude: config.exclude,
+      exclude: Array.isArray(config.exclude)
+        ? config.exclude.concat('**/.nyc_output/**')
+        : ['**/.nyc_output/**'],
       excludeNodeModules: config.excludeNodeModules !== false,
       extension: this.extensions
     })

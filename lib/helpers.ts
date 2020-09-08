@@ -1,5 +1,5 @@
-import { path, createHash } from '../deps.ts'
-import { DENO_NYC_CACHE } from './constants.ts'
+import { path, createHash, uuidv4 } from '../deps.ts'
+import { DENO_NYC_CACHE, DENO_NYC_CONFIG } from './constants.ts'
 import { isTypedArray } from './isTypedArray.ts'
 
 interface HashaOptions {
@@ -48,4 +48,41 @@ export function getCacheDir (cacheDir?: string) {
   }
 
   return DENO_NYC_CACHE
+}
+
+export async function getNycConfig (): Promise<any> {
+  let filename = path.resolve(Deno.cwd(), DENO_NYC_CONFIG)
+  let stat = await Deno.stat(filename)
+
+  if (!stat.isFile) {
+    filename + '.json'
+    stat = await Deno.stat(filename)
+  }
+
+  if (stat.isFile) {
+    try {
+      return JSON.parse(await Deno.readTextFile(filename))
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) {
+        throw error
+      }
+    }
+  }
+
+  return {} as any
+}
+
+async function attachCoverageListeners (entryPoints: string[]) {
+  const listener = () => {
+    const encoder = new TextEncoder()
+    const line = `window.addEventListener('unload',()=>{Deno.writeTextFileSync('../${uuidv4()}.json', JSON.stringify(window.__coverage__))})\n`
+
+    return encoder.encode(line)
+  }
+
+  for (const entryPoint of entryPoints) {
+    const contents = await Deno.readFile(entryPoint)
+
+    await Deno.writeFile(entryPoint, new Uint8Array([...listener(), ...contents]))
+  }
 }

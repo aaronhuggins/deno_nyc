@@ -1,14 +1,6 @@
-import { transformSync } from 'https://jspm.dev/@babel/core@7.11.6'
+window.addEventListener('unload', () => console.log('hi 1'))
+window.onunload = () => console.log('hi 2')
 
-const input = `
-function hi () {
-  console.log('Hello, World!')
-}
-`
-const opts = {
-  parserOpts: {
-    plugins: ['typescript']
-  }
-}
-
-console.log(transformSync(input, opts))
+// window.onunload({} as any)
+window.dispatchEvent(new Event('unload'))
+Deno.exit()
